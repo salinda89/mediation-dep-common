@@ -5,14 +5,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.wso2telco.dep.common.mediation.util.MsisdnDTO;
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.mediators.AbstractMediator;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MSISDValidationMediator extends AbstractMediator {
+public class MSISDValidationMediator extends AbstractCommonMediator {
 
     public boolean mediate(MessageContext messageContext) {
 
@@ -57,23 +56,12 @@ public class MSISDValidationMediator extends AbstractMediator {
 
         } catch (Exception e) {
             log.error("Error Validating MSISDN", e);
-            setErrorInContext(messageContext,"SVC0001",e.getMessage(),"","400","SERVICE_EXCEPTION");
+            setErrorInformationToContext(messageContext,"SVC0001",e.getMessage(),"","400","SERVICE_EXCEPTION");
             messageContext.setProperty("INTERNAL_ERROR","true");
         }
 
 
         return true;
-    }
-
-    private void setErrorInContext(MessageContext synContext, String messageId,
-                                   String errorText, String errorVariable, String httpStatusCode,
-                                   String exceptionType) {
-
-        synContext.setProperty("messageId", messageId);
-        synContext.setProperty("errorText", errorText);
-        synContext.setProperty("errorVariable", errorVariable);
-        synContext.setProperty("httpStatusCode", httpStatusCode);
-        synContext.setProperty("exceptionType", exceptionType);
     }
 
 }

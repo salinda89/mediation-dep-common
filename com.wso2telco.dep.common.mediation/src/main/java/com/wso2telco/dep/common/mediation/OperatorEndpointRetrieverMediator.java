@@ -3,11 +3,10 @@ package com.wso2telco.dep.common.mediation;
 import com.wso2telco.dep.operatorservice.model.OperatorEndPointDTO;
 import com.wso2telco.dep.operatorservice.service.OparatorService;
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.mediators.AbstractMediator;
 
 import java.util.*;
 
-public class OperatorEndpointRetrieverMediator extends AbstractMediator {
+public class OperatorEndpointRetrieverMediator extends AbstractCommonMediator {
 
 	/** The operatorEndpoints. */
 	private List<OperatorEndPointDTO> operatorEndpoints;
@@ -19,17 +18,6 @@ public class OperatorEndpointRetrieverMediator extends AbstractMediator {
 		} catch (Exception e) {
 			log.error("OperatorEndpointRetrieverMediator failed to initialize");
 		}
-	}
-
-	private void setErrorInContext(MessageContext synContext, String messageId,
-			String errorText, String errorVariable, String httpStatusCode,
-			String exceptionType) {
-
-		synContext.setProperty("messageId", messageId);
-		synContext.setProperty("errorText", errorText);
-		synContext.setProperty("errorVariable", errorVariable);
-		synContext.setProperty("httpStatusCode", httpStatusCode);
-		synContext.setProperty("exceptionType", exceptionType);
 	}
 
 	public boolean mediate(MessageContext synContext) {
@@ -63,7 +51,7 @@ public class OperatorEndpointRetrieverMediator extends AbstractMediator {
 			}
 
 			if (selectedEndpoint == null) {
-				setErrorInContext(synContext, "SVC0001",
+				setErrorInformationToContext(synContext, "SVC0001",
 						"A service error occurred. Error code is %1",
 						"Requested service is not provisioned", "400",
 						"SERVICE_EXCEPTION");
@@ -81,7 +69,7 @@ public class OperatorEndpointRetrieverMediator extends AbstractMediator {
 
 			log.error("error in EndpointRetrieverMediator mediate : "
 					+ e.getMessage());
-			setErrorInContext(
+			synContext = setErrorInformationToContext(
 					synContext,
 					"SVC0001",
 					"A service error occurred. Error code is %1",

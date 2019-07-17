@@ -40,4 +40,6 @@ public class MSISDNConstants {
     public static final String ANONYMIZE = "anonymize";
 
     public static final String ADDRESS = "address";
+
+    public static final String BLACKLIST_MSISDN_PREFIX = "tel3A+";
 }

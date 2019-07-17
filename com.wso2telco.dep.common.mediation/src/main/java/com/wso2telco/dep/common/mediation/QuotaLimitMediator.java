@@ -13,7 +13,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
-import org.apache.synapse.mediators.AbstractMediator;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -22,7 +21,7 @@ import com.wso2telco.dep.common.mediation.quotalimit.QuotaLimits;
 import com.wso2telco.dep.common.mediation.service.APIService;
 import com.wso2telco.dep.common.mediation.util.AttributeName;
 
-public class QuotaLimitMediator extends AbstractMediator {
+public class QuotaLimitMediator extends AbstractCommonMediator {
 
 	private static Log log = LogFactory.getLog(QuotaLimitMediator.class);
 
@@ -211,11 +210,7 @@ public class QuotaLimitMediator extends AbstractMediator {
 	}
 
     private void setErrorInContext(MessageContext synContext, String messageId,String errorText, String errorVariable, String httpStatusCode,String exceptionType) {
-        synContext.setProperty("messageId", messageId);
-        synContext.setProperty("errorText", errorText);
-        synContext.setProperty("errorVariable", errorVariable);
-        synContext.setProperty("httpStatusCode", httpStatusCode);
-        synContext.setProperty("exceptionType", exceptionType);
-        synContext.setProperty("INTERNAL_ERROR", "true");
+		super.setErrorInformationToContext(synContext, messageId, errorText, errorVariable, httpStatusCode, exceptionType);
+		synContext.setProperty("INTERNAL_ERROR", "true");
     }
 }

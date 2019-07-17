@@ -2,23 +2,13 @@ package com.wso2telco.dep.common.mediation;
 
 import java.util.Date;
 import java.util.List;
+
+import org.apache.http.HttpStatus;
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.mediators.AbstractMediator;
 import com.wso2telco.dep.operatorservice.service.OparatorService;
 import com.wso2telco.dep.operatorservice.model.OperatorApplicationDTO;
 
-public class DefaultTokenRetrieverMediator extends AbstractMediator {
-
-	private void setErrorInContext(MessageContext synContext, String messageId,
-			String errorText, String errorVariable, String httpStatusCode,
-			String exceptionType) {
-
-		synContext.setProperty("messageId", messageId);
-		synContext.setProperty("errorText", errorText);
-		synContext.setProperty("errorVariable", errorVariable);
-		synContext.setProperty("httpStatusCode", httpStatusCode);
-		synContext.setProperty("exceptionType", exceptionType);
-	}
+public class DefaultTokenRetrieverMediator extends AbstractCommonMediator {
 
 	public boolean mediate(MessageContext synContext) {
 
@@ -92,12 +82,9 @@ public class DefaultTokenRetrieverMediator extends AbstractMediator {
 
 			log.error("error in DefaultTokenRetrieverMediator mediate : "
 					+ e.getMessage());
-			setErrorInContext(
-					synContext,
-					"SVC0001",
-					"A service error occurred. Error code is %1",
+			setErrorInformationToContext(synContext, "SVC0001", "A service error occurred. Error code is %1",
 					"An internal service error has occured. Please try again later.",
-					"500", "SERVICE_EXCEPTION");
+					Integer.toString(HttpStatus.SC_INTERNAL_SERVER_ERROR), "SERVICE_EXCEPTION");
 			synContext.setProperty("INTERNAL_ERROR", "true");
 		}
 

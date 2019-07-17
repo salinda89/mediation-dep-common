@@ -1,21 +1,9 @@
 package com.wso2telco.dep.common.mediation;
 
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.mediators.AbstractMediator;
 import com.wso2telco.dep.common.mediation.service.APIService;
 
-public class PurchaseCategoryCodeValidateMediator extends AbstractMediator {
-
-	private void setErrorInContext(MessageContext synContext, String messageId,
-			String errorText, String errorVariable, String httpStatusCode,
-			String exceptionType) {
-
-		synContext.setProperty("messageId", messageId);
-		synContext.setProperty("errorText", errorText);
-		synContext.setProperty("errorVariable", errorVariable);
-		synContext.setProperty("httpStatusCode", httpStatusCode);
-		synContext.setProperty("exceptionType", exceptionType);
-	}
+public class PurchaseCategoryCodeValidateMediator extends AbstractCommonMediator {
 
 	public boolean mediate(MessageContext synContext) {
 
@@ -32,7 +20,7 @@ public class PurchaseCategoryCodeValidateMediator extends AbstractMediator {
 
 				log.error("purchase category code : " + purchaseCategoryCode
 						+ " is invalid");
-				setErrorInContext(synContext, "POL0001",
+				setErrorInformationToContext(synContext, "POL0001",
 						"A policy error occurred. Error code is %1",
 						"Invalid purchaseCategoryCode : "
 								+ purchaseCategoryCode, "400",
@@ -43,7 +31,7 @@ public class PurchaseCategoryCodeValidateMediator extends AbstractMediator {
 
 			log.error("error in PurchaseCategoryCodeValidateMediator mediate : "
 					+ e.getMessage());
-			setErrorInContext(
+			synContext = setErrorInformationToContext(
 					synContext,
 					"SVC0001",
 					"A service error occurred. Error code is %1",

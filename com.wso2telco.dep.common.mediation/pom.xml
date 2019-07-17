@@ -90,6 +90,10 @@
 			<groupId>com.wso2telco.dep</groupId>
 			<artifactId>user-masking</artifactId>
 		</dependency>
+        <dependency>
+            <groupId>com.wso2telco.core</groupId>
+            <artifactId>framework-axp</artifactId>
+        </dependency>
 	</dependencies>
 	<repositories>
 		<repository>
