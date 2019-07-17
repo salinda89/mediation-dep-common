@@ -6,7 +6,6 @@ import java.util.Set;
 import com.wso2telco.core.mnc.resolver.ConfigLoader;
 import com.wso2telco.core.mnc.resolver.DataHolder;
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.mediators.AbstractMediator;
 import com.wso2telco.core.mnc.resolver.MNCQueryClient;
 import com.wso2telco.core.mnc.resolver.dao.OperatorDAO;
 import com.wso2telco.core.msisdnvalidator.MSISDN;
@@ -14,24 +13,13 @@ import com.wso2telco.core.msisdnvalidator.MSISDNUtil;
 import com.wso2telco.dep.operatorservice.model.OperatorEndPointDTO;
 import com.wso2telco.dep.operatorservice.service.OparatorService;
 
-public class EndpointRetrieverMediator extends AbstractMediator {
+public class EndpointRetrieverMediator extends AbstractCommonMediator {
 
 	/** The operatorEndpoints. */
 	private List<OperatorEndPointDTO> operatorEndpoints;
 
 	private Set<String> countryLookUpOnHeader = new HashSet<String>();
 	private Set<String> validOperators = new HashSet<String>();
-
-	private void setErrorInContext(MessageContext synContext, String messageId,
-			String errorText, String errorVariable, String httpStatusCode,
-			String exceptionType) {
-
-		synContext.setProperty("messageId", messageId);
-		synContext.setProperty("errorText", errorText);
-		synContext.setProperty("errorVariable", errorVariable);
-		synContext.setProperty("httpStatusCode", httpStatusCode);
-		synContext.setProperty("exceptionType", exceptionType);
-	}
 
 	public boolean mediate(MessageContext synContext) {
 
@@ -106,7 +94,7 @@ public class EndpointRetrieverMediator extends AbstractMediator {
 
 					if (operator == null) {
 
-						setErrorInContext(synContext, "SVC0001",
+						setErrorInformationToContext(synContext, "SVC0001",
 								"A service error occurred. Error code is %1",
 								"No valid operator found for given MCC and MNC",
 								"400", "SERVICE_EXCEPTION");
@@ -131,7 +119,7 @@ public class EndpointRetrieverMediator extends AbstractMediator {
 
 			if (operator == null) {
 
-				setErrorInContext(synContext, "SVC0001",
+				setErrorInformationToContext(synContext, "SVC0001",
 						"A service error occurred. Error code is %1",
 						"No valid operator found for given MSISDN", "400",
 						"SERVICE_EXCEPTION");
@@ -143,7 +131,7 @@ public class EndpointRetrieverMediator extends AbstractMediator {
 
 			if (!validOperators.contains(String.valueOf(operator))) {
 
-				setErrorInContext(synContext, "SVC0001",
+				setErrorInformationToContext(synContext, "SVC0001",
 						"A service error occurred. Error code is %1",
 						"Requested service is not provisioned", "400",
 						"SERVICE_EXCEPTION");
@@ -156,7 +144,7 @@ public class EndpointRetrieverMediator extends AbstractMediator {
 
 			if (validOperatorendpoint == null) {
 
-				setErrorInContext(synContext, "SVC0001",
+				setErrorInformationToContext(synContext, "SVC0001",
 						"A service error occurred. Error code is %1",
 						"Requested service is not provisioned", "400",
 						"SERVICE_EXCEPTION");
@@ -175,7 +163,7 @@ public class EndpointRetrieverMediator extends AbstractMediator {
 
 			log.error("error in EndpointRetrieverMediator mediate : "
 					+ e.getMessage());
-			setErrorInContext(
+			setErrorInformationToContext(
 					synContext,
 					"SVC0001",
 					"A service error occurred. Error code is %1",

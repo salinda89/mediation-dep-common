@@ -1,94 +1,73 @@
 package com.wso2telco.dep.common.mediation;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
+import com.wso2telco.dep.common.mediation.dao.BlacklistDAO;
+import com.wso2telco.dep.common.mediation.dto.ApiInformation;
 import com.wso2telco.dep.common.mediation.service.APIService;
+import com.wso2telco.dep.common.mediation.service.BlacklistService;
+import com.wso2telco.dep.common.mediation.service.impl.BlacklistServiceImpl;
 import com.wso2telco.dep.common.mediation.util.ContextPropertyName;
 import com.wso2telco.dep.common.mediation.util.ExceptionType;
 import com.wso2telco.dep.common.mediation.util.ErrorConstants;
+import framework.logging.LazyLogger;
+import framework.logging.LazyLoggerFactory;
 import org.apache.http.HttpStatus;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.SynapseConstants;
-import org.apache.synapse.mediators.AbstractMediator;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.List;
 
-public class MSISDNBlacklistMediator extends AbstractMediator {
+/**
+ * Mediator for blacklisted MSISDN validation.
+ */
+public class MSISDNBlacklistMediator extends AbstractMSISDNMediator {
 
-	private void setErrorInContext(MessageContext synContext, String messageId,
-	                               String errorText, String errorVariable, String httpStatusCode,
-	                               String exceptionType) {
+	private LazyLogger logger = LazyLoggerFactory.getLogger(this.getClass());
 
-		synContext.setProperty(ContextPropertyName.MESSAGE_ID, messageId);
-		synContext.setProperty("mediationErrorText", errorText);    // mediationErrorText  ContextPropertyName.ERROR_TEXT
-		synContext.setProperty(ContextPropertyName.ERROR_VARIABLE, errorVariable);
-		synContext.setProperty(ContextPropertyName.HTTP_STATUS_CODE, httpStatusCode);
-		synContext.setProperty(ContextPropertyName.EXCEPTION_TYPE, exceptionType);
-	}
+	private BlacklistService blacklistService = new BlacklistServiceImpl(new BlacklistDAO());
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param messageContext
+	 * @return
+	 */
 	public boolean mediate(MessageContext messageContext) {
 
-		String msisdn = (String) messageContext.getProperty("paramValue");
-		String paramArray = (String) messageContext.getProperty("paramArray");
-		String maskedMsidsn = (String) messageContext.getProperty("MASKED_MSISDN");
-		String maskedMsisdnSuffix = (String) messageContext.getProperty("MASKED_MSISDN_SUFFIX");
-		String apiName = (String) messageContext.getProperty("API_NAME");
-		String apiVersion = (String) messageContext.getProperty("VERSION");
-		String apiPublisher = (String) messageContext.getProperty("API_PUBLISHER");
+	    CommonMSISDNValidationContextData commonContextData = extractCommonMSISDNValidationContextData(messageContext);
+        String loggingMsisdn = commonContextData.isUserAnonymize ? commonContextData.maskedMsisdn
+				: commonContextData.msisdn;
+		String formattedPhoneNumber = commonContextData.isUserAnonymize ? commonContextData.maskedMsisdnSuffix
+				: commonContextData.formattedPhoneNumber != null ? commonContextData.formattedPhoneNumber : null;
 
-		String loggingMsisdn = msisdn;
-
-		String apiID;
 		APIService apiService = new APIService();
 
-		String regexPattern = (String) messageContext.getProperty("msisdnRegex");
-		String regexGroupNumber = (String) messageContext.getProperty("msisdnRegexGroup");
-
-		Pattern pattern = Pattern.compile(regexPattern);
-		Matcher matcher = pattern.matcher(msisdn);
-
-		String formattedPhoneNumber = null;
-		if(Boolean.parseBoolean((String)messageContext.getProperty("USER_ANONYMIZATION"))) {
-			loggingMsisdn = maskedMsidsn;
-			formattedPhoneNumber = maskedMsisdnSuffix;
-		} else if (matcher.matches()) {
-			formattedPhoneNumber = matcher.group(Integer.parseInt(regexGroupNumber));
-		}
-
 		try {
-			apiID = apiService.getAPIId(apiPublisher, apiName, apiVersion);
-			if (apiService.isBlackListedNumber(apiID, formattedPhoneNumber)) {
-				log.info(loggingMsisdn + " is BlackListed number for " + apiName + " API" + apiVersion + " version");
+			String apiId = apiService.getAPIId(new ApiInformation(commonContextData.apiPublisher,
+					commonContextData.apiName, commonContextData.apiVersion));
+			List<String> blacklistedMSISDNs = blacklistService.filterBlacklistedMSISDNsByApiId(apiId, Lists.newArrayList(formattedPhoneNumber));
+			if (!blacklistedMSISDNs.isEmpty()) {
+                logger.info(() -> Joiner.on(" ").join(loggingMsisdn, "is BlackListed number for",
+                        commonContextData.apiName, "API", commonContextData.apiVersion, "version"));
 
 				messageContext.setProperty(SynapseConstants.ERROR_CODE, "POL0001:");
-				messageContext.setProperty(SynapseConstants.ERROR_MESSAGE, "Internal Server Error. Blacklisted " +
-						"Number");
-				messageContext.setProperty("BLACKLISTED_MSISDN", "true");
-
-				setErrorInContext(
-						messageContext,
-						ErrorConstants.POL0001,
-						ErrorConstants.POL0001_TEXT,
-						"Blacklisted Number: " + msisdn,
+				messageContext.setProperty(SynapseConstants.ERROR_MESSAGE, "Internal Server Error. Blacklisted Number");
+                messageContext = setErrorInformationToContext(messageContext, ErrorConstants.POL0001, ErrorConstants.POL0001_TEXT,
+						Joiner.on(" ").join("Blacklisted Number:", commonContextData.msisdn),
 						Integer.toString(HttpStatus.SC_BAD_REQUEST), ExceptionType.POLICY_EXCEPTION.toString());
-			} else {
+                messageContext.setProperty("BLACKLISTED_MSISDN", "true");
+            } else {
 				messageContext.setProperty("BLACKLISTED_MSISDN", "false");
 			}
 		} catch (Exception e) {
-			log.error("error in MSISDNBlacklistMediator mediate : " + e.getMessage());
-
-			String errorVariable = msisdn;
-			if(paramArray != null){
-				errorVariable = paramArray;
-			}
-
-			setErrorInContext(
-					messageContext,
-					ErrorConstants.SVC0001,
-					ErrorConstants.SVC0001_TEXT,
-					errorVariable,
-					Integer.toString(HttpStatus.SC_INTERNAL_SERVER_ERROR), ExceptionType.SERVICE_EXCEPTION.toString());
-			messageContext.setProperty(ContextPropertyName.INTERNAL_ERROR, "true");
-		}
+			logger.error("error in MSISDNBlacklistMediator mediate : " + e.getMessage());
+			String errorVariable = commonContextData.paramArray != null ? commonContextData.paramArray
+					: commonContextData.msisdn;
+            messageContext = setErrorInformationToContext(messageContext, ErrorConstants.SVC0001, ErrorConstants.SVC0001_TEXT, errorVariable,
+                    Integer.toString(HttpStatus.SC_INTERNAL_SERVER_ERROR), ExceptionType.SERVICE_EXCEPTION.toString());
+            messageContext.setProperty(ContextPropertyName.INTERNAL_ERROR, "true");
+        }
 		return true;
 	}
 }

@@ -23,6 +23,7 @@ public class ContextPropertyName {
 	public static final String INTERNAL_ERROR = "INTERNAL_ERROR";
 	public static final String MESSAGE_ID = "messageId";
 	public static final String ERROR_TEXT = "errorText";
+	public static final String MEDIATION_ERROR_TEXT = "mediationErrorText";
 	public static final String ERROR_VARIABLE = "errorVariable";
 	public static final String HTTP_STATUS_CODE = "httpStatusCode";
 	public static final String EXCEPTION_TYPE = "exceptionType";

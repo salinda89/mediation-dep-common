@@ -127,6 +127,11 @@
         <artifactId>user-masking</artifactId>
         <version>${com.wso2telco.dep.version}</version>
       </dependency>
+      <dependency>
+        <groupId>com.wso2telco.core</groupId>
+        <artifactId>framework-axp</artifactId>
+        <version>${com.wso2telco.core.version}</version>
+      </dependency>
         <!--Unit test dependencies -->
         <dependency>
             <groupId>org.testng</groupId>

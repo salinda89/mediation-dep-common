@@ -22,14 +22,13 @@ import com.wso2telco.dep.common.mediation.constant.MSISDNConstants;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
-import org.apache.synapse.mediators.AbstractMediator;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.net.URLEncoder;
 import java.util.Map;
 
-public class UserMaskingMediator extends AbstractMediator {
+public class UserMaskingMediator extends AbstractCommonMediator {
 
     public boolean mediate(MessageContext messageContext) {
         try {
@@ -123,7 +122,7 @@ public class UserMaskingMediator extends AbstractMediator {
         } catch (Exception e) {
 
             log.error("error in UserMaskingMediator mediate : " + e.getMessage());
-            setErrorInContext(
+            messageContext = setErrorInformationToContext(
                     messageContext,
                     ErrorConstants.SVC0001,
                     ErrorConstants.SVC0001_TEXT,
@@ -131,17 +130,6 @@ public class UserMaskingMediator extends AbstractMediator {
             messageContext.setProperty(ContextPropertyName.INTERNAL_ERROR, "true");
         }
         return true;
-    }
-
-    private void setErrorInContext(MessageContext synContext, String messageId,
-                                   String errorText, String errorVariable, String httpStatusCode,
-                                   String exceptionType) {
-
-        synContext.setProperty(ContextPropertyName.MESSAGE_ID, messageId);
-        synContext.setProperty(ContextPropertyName.ERROR_TEXT, errorText);
-        synContext.setProperty(ContextPropertyName.ERROR_VARIABLE, errorVariable);
-        synContext.setProperty(ContextPropertyName.HTTP_STATUS_CODE, httpStatusCode);
-        synContext.setProperty(ContextPropertyName.EXCEPTION_TYPE, exceptionType);
     }
 
     public static Object getKeyFromValue(Map maskedMsisdnMap, String value) {

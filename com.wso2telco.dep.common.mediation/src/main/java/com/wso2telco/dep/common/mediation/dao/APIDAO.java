@@ -12,7 +12,6 @@ import java.util.Map;
 
 import com.wso2telco.core.dbutils.DbUtils;
 import com.wso2telco.core.dbutils.util.DataSourceNames;
-import com.wso2telco.dep.common.mediation.quotalimit.QuotaLimits;
 import com.wso2telco.dep.common.mediation.util.DatabaseTables;
 
 import org.apache.commons.logging.Log;
@@ -432,6 +431,12 @@ public class APIDAO {
 		return -1;
 	}
 
+	/**
+	 * TODO inefficient query with six or clauses. refactor and optimize
+	 * take the decision before call to the db based on parameter availability and
+	 * create well specialized separate queries for all the six scenarios
+	 * move the implementation to WhiteListService class.
+	 */
 	public boolean checkWhiteListed(String msisdn, String applicationId,
 			String subscriptionId, String apiId) throws Exception {
 

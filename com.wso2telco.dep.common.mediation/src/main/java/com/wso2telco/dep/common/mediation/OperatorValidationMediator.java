@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.mediators.AbstractMediator;
 
 import com.wso2telco.dep.operatorservice.service.OparatorService;
 import com.wso2telco.dep.operatorservice.model.OperatorApplicationDTO;
@@ -12,16 +11,7 @@ import com.wso2telco.core.dbutils.exception.BusinessException;
 import com.wso2telco.dep.operatorservice.exception.ApplicationException;
 import com.wso2telco.dep.operatorservice.exception.APIException;
 
-public class OperatorValidationMediator extends AbstractMediator {
-	
-	private void setErrorInContext(MessageContext synContext, String messageId, 
-			String errorText, String errorVariable) {
-		synContext.setProperty("messageId", messageId);
-		synContext.setProperty("errorText", errorText);
-		synContext.setProperty("errorVariable", errorVariable);
-		synContext.setProperty("httpStatusCode", "400");
-		synContext.setProperty("OPERATOR_VALIDATED", "false");
-	}
+public class OperatorValidationMediator extends AbstractCommonMediator {
 
 	public boolean mediate(MessageContext synContext) {
 		OparatorService operatorService = new OparatorService();
@@ -38,8 +28,8 @@ public class OperatorValidationMediator extends AbstractMediator {
 		}
 		
 		if (validoperators.isEmpty()) {
-			setErrorInContext(synContext, "SVC0001", "A service error occurred. Error code is %1", 
-					"Requested service is not provisioned");
+			setErrorInformationToContext(synContext, "SVC0001", "A service error occurred. Error code is %1",
+					"Requested service is not provisioned", "400", "SERVICE_EXCEPTION");
 			log.error("Couldn't find valid operators for the application ID");
 			return true;
 		}
@@ -67,8 +57,10 @@ public class OperatorValidationMediator extends AbstractMediator {
 		}
 
 		if (validoperatorsDup.isEmpty()) {
-			setErrorInContext(synContext, "SVC0001", "A service error occurred. Error code is %1", 
-					"Requested service is not provisioned");
+			synContext = setErrorInformationToContext(synContext, "SVC0001", "A service error occurred. Error code is %1",
+					"Requested service is not provisioned", "400", "SERVICE_EXCEPTION");
+
+			synContext.setProperty("OPERATOR_VALIDATED", "false");
 			log.error("Couldn't find active operators from the valid operator list for the application ID and the API");
 			return true;
 		}

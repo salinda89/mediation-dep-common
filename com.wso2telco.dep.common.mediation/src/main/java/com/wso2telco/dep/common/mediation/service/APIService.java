@@ -1,16 +1,28 @@
 package com.wso2telco.dep.common.mediation.service;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Maps;
+import com.wso2telco.dep.common.mediation.dao.APIDAO;
+import com.wso2telco.dep.common.mediation.dto.ApiInformation;
+import framework.cache.AXPCacheBuilder;
+import framework.cache.IAXPCacheLoader;
+import framework.cache.IAXPLoadingCache;
+import framework.logging.LazyLogger;
+import framework.logging.LazyLoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.wso2telco.dep.user.masking.UserMaskHandler;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import com.wso2telco.dep.common.mediation.dao.APIDAO;
-
 public class APIService {
+
+	/**
+	 * The cache use to hold api ids throughout the application
+	 */
+	private static IAXPLoadingCache<ApiInformation, String> apiIdCache = AXPCacheBuilder.newBuilder()
+			.setNoTimeLimit(true).build(new ApiIdCacheLoader());
 
 	APIDAO apiDAO;
 
@@ -130,6 +142,32 @@ public class APIService {
 		return apiId;
 	}
 
+	/**
+	 * This method helps to retrieve api id related to the given api information
+	 * This has the caching support. If the given key is available in the cache, it will fetch the data from cache.
+	 *
+	 * @param apiInformation
+	 * @return
+	 */
+	public String getAPIId(ApiInformation apiInformation) throws Exception {
+		try {
+			return apiIdCache.getData(apiInformation);
+		} catch (Exception e) {
+			log.error("Error while retrieving API Id value", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * Deprecated due to inefficient data loading in to the memory
+	 * instead use {@link BlacklistService#filterBlacklistedMSISDNsByApiId(String, List)}
+	 *
+	 * @param apiId
+	 * @param msisdn
+	 * @return
+	 * @throws Exception
+	 */
+	@Deprecated
 	public boolean isBlackListedNumber(String apiId, String msisdn)
 			throws Exception {
 		try {
@@ -232,5 +270,33 @@ public class APIService {
 		}
 	}
 
+	/**
+	 * Cache loader for api id
+	 * load the missing data from the database
+	 */
+	private static class ApiIdCacheLoader implements IAXPCacheLoader<ApiInformation, String> {
 
+		private static APIDAO apiDAO = new APIDAO();
+
+		private LazyLogger logger = LazyLoggerFactory.getLogger(ApiIdCacheLoader.class);
+		/**
+		 * {@inheritDoc}
+		 *
+		 * @param cacheKeyList
+		 * @return
+		 * @throws Exception
+		 */
+		@Override
+		public Map<ApiInformation, String> load(List<ApiInformation> cacheKeyList) throws Exception {
+
+			Map<ApiInformation, String> apiInformationMap = Maps.newHashMap();
+			for (ApiInformation apiInformation : cacheKeyList) {
+				logger.debug(() -> Joiner.on(" ").join("Retrieving API id from db :", apiInformation.toString()));
+				apiInformationMap.put(apiInformation, apiDAO.getAPIId(apiInformation.apiPublisher,
+						apiInformation.apiName, apiInformation.apiVersion));
+			}
+
+			return apiInformationMap;
+		}
+	}
 }
